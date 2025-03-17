@@ -34,7 +34,8 @@ app.get('/', (req, res) => {
 app.get('/topics', async (req, res) => {
     try {
         await admin.connect();
-        const topics = await admin.listTopics();
+        let topics = await admin.listTopics();
+        topics = removeStringsWithUnderscore(topics)
         await admin.disconnect();
         res.json(topics);
     } catch (error) {
@@ -48,21 +49,18 @@ app.post('/send', async (req, res) => {
         topic,
         messages: [{ value: message }],
     });
-    console.log('Message sent to Kafka');
     res.send('Message sent to Kafka');
 });
 
 app.post('/send-message-loop', async (req, res) => {
     try {
         const { message, topic, count } = req.body;
+        //console.log("req :", req)
         const messageString = JSON.stringify(message);
-
-        for (let i = 0; i < count; i++) {
-            await producer.send({
-                topic,
-                messages: [{ value: messageString }],
-            });
-        }
+        await producer.send({
+            topic,
+            messages: [{ value: messageString }],
+        });
 
         return res.send('Message sent to Kafka');
     } catch (error) {
@@ -91,6 +89,21 @@ app.post('/send-message-loop-v2', async (req, res) => {
         return res.status(500).send('Failed to send message to Kafka');
     }
 });
+
+function removeStringsWithUnderscore(obj) {
+    if (Array.isArray(obj)) {
+      return obj.map(removeStringsWithUnderscore).filter(v => v !== null);
+    } else if (typeof obj === "object" && obj !== null) {
+      return Object.fromEntries(
+        Object.entries(obj)
+          .map(([k, v]) => [k, removeStringsWithUnderscore(v)])
+          .filter(([_, v]) => v !== null)
+      );
+    } else if (typeof obj === "string" && obj.includes("_")) {
+      return null; // Remove string with '_'
+    }
+    return obj;
+  }
 
 async function startKafkaProducer() {
     await producer.connect();
