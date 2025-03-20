@@ -36,6 +36,7 @@ app.get('/topics', async (req, res) => {
         await admin.connect();
         let topics = await admin.listTopics();
         topics = removeStringsWithUnderscore(topics)
+        topics.sort()
         await admin.disconnect();
         res.json(topics);
     } catch (error) {
