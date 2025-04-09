@@ -44,6 +44,36 @@ app.get('/topics', async (req, res) => {
     }
 });
 
+// Add this API endpoint for creating a new topic
+app.post('/create-topic', async (req, res) => {
+    try {
+        const { topicName, numPartitions = 1, replicationFactor = 1 } = req.body;
+
+        // Validate input
+        if (!topicName) {
+            return res.status(400).json({ error: 'Topic name is required' });
+        }
+
+        // Connect to Kafka admin
+        await admin.connect();
+
+        // Create the topic
+        await admin.createTopics({
+            topics: [{
+                topic: topicName,
+                numPartitions,
+                replicationFactor
+            }]
+        });
+
+        await admin.disconnect();
+        res.status(201).json({ message: `Topic '${topicName}' created successfully` });
+    } catch (error) {
+        console.error('Error creating topic:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/send', async (req, res) => {
     const { message, topic } = req.body;
     await producer.send({
@@ -93,18 +123,18 @@ app.post('/send-message-loop-v2', async (req, res) => {
 
 function removeStringsWithUnderscore(obj) {
     if (Array.isArray(obj)) {
-      return obj.map(removeStringsWithUnderscore).filter(v => v !== null);
+        return obj.map(removeStringsWithUnderscore).filter(v => v !== null);
     } else if (typeof obj === "object" && obj !== null) {
-      return Object.fromEntries(
-        Object.entries(obj)
-          .map(([k, v]) => [k, removeStringsWithUnderscore(v)])
-          .filter(([_, v]) => v !== null)
-      );
+        return Object.fromEntries(
+            Object.entries(obj)
+                .map(([k, v]) => [k, removeStringsWithUnderscore(v)])
+                .filter(([_, v]) => v !== null)
+        );
     } else if (typeof obj === "string" && obj.includes("_")) {
-      return null; // Remove string with '_'
+        return null; // Remove string with '_'
     }
     return obj;
-  }
+}
 
 async function startKafkaProducer() {
     await producer.connect();
