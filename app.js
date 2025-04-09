@@ -150,6 +150,150 @@ app.post('/send-message-loop-v2', async (req, res) => {
     }
 });
 
+// เพิ่ม API endpoint สำหรับตรวจสอบสถานะการเชื่อมต่อ
+app.get('/health', async (req, res) => {
+    try {
+        const isConnected = await checkKafkaConnection();
+        if (isConnected) {
+            res.status(200).json({ status: 'ok', message: 'Connected to Kafka broker' });
+        } else {
+            res.status(503).json({ status: 'error', message: 'Failed to connect to Kafka broker' });
+        }
+    } catch (error) {
+        console.error('Health check error:', error);
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+});
+
+// เพิ่ม API endpoint สำหรับดูรายละเอียดของ Topic
+app.get('/topic/:topicName', async (req, res) => {
+    try {
+        const { topicName } = req.params;
+        
+        if (!topicName) {
+            return res.status(400).json({ error: 'Topic name is required' });
+        }
+        
+        await admin.connect();
+        
+        // ดึงข้อมูล metadata ของ Topic
+        const metadata = await admin.fetchTopicMetadata({ topics: [topicName] });
+        
+        if (!metadata.topics || metadata.topics.length === 0) {
+            await admin.disconnect();
+            return res.status(404).json({ error: `Topic '${topicName}' not found` });
+        }
+        
+        const topicInfo = metadata.topics[0];
+        
+        // ดึงข้อมูล configuration ของ Topic
+        const configs = await admin.describeConfigs({
+            resources: [{
+                type: 2, // Type 2 is for TOPIC
+                name: topicName
+            }]
+        });
+        
+        await admin.disconnect();
+        
+        res.json({
+            name: topicInfo.name,
+            partitions: topicInfo.partitions,
+            configs: configs.resources[0]?.configEntries || []
+        });
+    } catch (error) {
+        console.error('Error fetching topic details:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// เพิ่ม API endpoint สำหรับส่งข้อมูลพร้อม key
+app.post('/send-with-key', async (req, res) => {
+    try {
+        const { message, topic, key } = req.body;
+        
+        // ตรวจสอบข้อมูลที่จำเป็น
+        if (!message || !topic) {
+            return res.status(400).json({ error: 'Message and topic are required' });
+        }
+        
+        // แปลง message เป็น string ถ้ายังไม่ใช่
+        const messageValue = typeof message === 'object' ? JSON.stringify(message) : message;
+        const messageKey = key ? String(key) : null;
+        
+        // ส่งข้อมูลไปยัง Kafka พร้อม key
+        await producer.send({
+            topic,
+            messages: [{ 
+                key: messageKey,
+                value: messageValue 
+            }],
+        });
+        
+        res.status(200).json({ 
+            success: true,
+            message: `Message sent to topic '${topic}'${messageKey ? ` with key '${messageKey}'` : ''}` 
+        });
+    } catch (error) {
+        console.error('Error sending message with key:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// เพิ่ม API endpoint สำหรับสร้าง Topic แบบกำหนด config เพิ่มเติมได้
+app.post('/create-topic-advanced', async (req, res) => {
+    try {
+        const { 
+            topicName, 
+            numPartitions = 1, 
+            replicationFactor = 1,
+            configs = {} // เช่น { 'cleanup.policy': 'compact', 'retention.ms': '86400000' }
+        } = req.body;
+
+        // ตรวจสอบข้อมูลที่จำเป็น
+        if (!topicName) {
+            return res.status(400).json({ error: 'Topic name is required' });
+        }
+
+        // เชื่อมต่อกับ Kafka admin
+        await admin.connect();
+
+        // สร้าง Topic พร้อมกำหนด configs
+        await admin.createTopics({
+            topics: [{
+                topic: topicName,
+                numPartitions,
+                replicationFactor,
+                configEntries: Object.entries(configs).map(([name, value]) => ({ name, value }))
+            }]
+        });
+
+        await admin.disconnect();
+        res.status(201).json({ 
+            message: `Topic '${topicName}' created successfully with custom configurations`,
+            configs
+        });
+    } catch (error) {
+        console.error('Error creating topic with custom configs:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ฟังก์ชันสำหรับตรวจสอบการเชื่อมต่อกับ Kafka
+async function checkKafkaConnection() {
+    try {
+        // พยายามเชื่อมต่อกับ Kafka admin
+        await admin.connect();
+        // ลองเรียกใช้งาน API เพื่อตรวจสอบการเชื่อมต่อ
+        await admin.listTopics();
+        await admin.disconnect();
+        return true;
+    } catch (error) {
+        console.error('Kafka connection check failed:', error);
+        return false;
+    }
+}
+
 function removeStringsWithUnderscore(obj) {
     if (Array.isArray(obj)) {
         return obj.map(removeStringsWithUnderscore).filter(v => v !== null);

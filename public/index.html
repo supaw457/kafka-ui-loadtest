@@ -12,6 +12,8 @@
             --primary-color: #6c63ff;
             --secondary-color: #4a47a3;
             --success-color: #4caf50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
             --light-color: #f8f9fa;
             --dark-color: #343a40;
         }
@@ -52,6 +54,15 @@
             border-bottom: 3px solid var(--primary-color);
         }
 
+        .nav-link.delete-tab {
+            color: var(--danger-color);
+        }
+
+        .nav-link.delete-tab.active {
+            color: var(--danger-color);
+            border-bottom: 3px solid var(--danger-color);
+        }
+
         .form-control,
         .form-select {
             border-radius: 8px;
@@ -88,6 +99,20 @@
             transition: all 0.3s ease;
         }
 
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+            border-color: #d32f2f;
+        }
+
         .card {
             border-radius: 10px;
             border: none;
@@ -101,6 +126,11 @@
             font-weight: 600;
             border-radius: 10px 10px 0 0 !important;
             padding: 1rem 1.5rem;
+        }
+
+        .card-danger .card-header {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
         }
 
         .card-body {
@@ -117,6 +147,11 @@
             border-radius: 8px;
             margin-right: 10px;
             color: var(--primary-color);
+        }
+
+        .icon-danger {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
         }
 
         .response-container {
@@ -153,6 +188,17 @@
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .topic-badge:hover {
+            background-color: rgba(108, 99, 255, 0.2);
+        }
+
+        .topic-badge.selected {
+            background-color: var(--primary-color);
+            color: white;
         }
 
         .topics-container {
@@ -168,6 +214,41 @@
 
         .text-muted {
             font-size: 0.875rem;
+        }
+
+        .confirmation-box {
+            border: 1px solid var(--danger-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            background-color: rgba(244, 67, 54, 0.05);
+        }
+
+        .confirmation-box h5 {
+            color: var(--danger-color);
+        }
+
+        .delete-topic-badge {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .delete-topic-badge:hover {
+            background-color: rgba(244, 67, 54, 0.2);
+        }
+
+        .delete-topic-badge.selected {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .tooltip-inner {
+            max-width: 200px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
         }
     </style>
 </head>
@@ -194,6 +275,12 @@
                     <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button"
                         role="tab" aria-controls="create" aria-selected="false">
                         <i class="fas fa-plus-circle me-2"></i>Create Topic
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link delete-tab" id="delete-tab" data-bs-toggle="tab" data-bs-target="#delete"
+                        type="button" role="tab" aria-controls="delete" aria-selected="false">
+                        <i class="fas fa-trash-alt me-2"></i>Delete Topic
                     </button>
                 </li>
             </ul>
@@ -319,6 +406,61 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Delete Topic Tab -->
+                <div class="tab-pane fade" id="delete" role="tabpanel" aria-labelledby="delete-tab">
+                    <div class="card card-danger mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container icon-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </span>
+                            <span>Delete Kafka Topic</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>คำเตือน:</strong> การลบ Topic
+                                จะทำให้ข้อมูลทั้งหมดในนั้นหายไปและไม่สามารถกู้คืนได้
+                            </div>
+
+                            <h5 class="mt-4 mb-3">เลือก Topic ที่ต้องการลบ:</h5>
+
+                            <div class="topics-container" id="deleteTopicBadges">
+                                <!-- Delete topic badges will be populated here -->
+                            </div>
+
+                            <button onclick="loadDeleteTopics()" class="btn btn-outline-secondary btn-sm mt-2">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh Topics
+                            </button>
+
+                            <div id="confirmationBox" class="confirmation-box d-none mt-4">
+                                <h5 class="mb-3"><i class="fas fa-exclamation-triangle me-2"></i>ยืนยันการลบ Topic</h5>
+                                <p>คุณกำลังจะลบ Topic: <strong id="topicToDelete" class="text-danger"></strong></p>
+                                <p>การกระทำนี้ไม่สามารถย้อนกลับได้ คุณแน่ใจหรือไม่?</p>
+                                <div class="d-flex gap-2 mt-3">
+                                    <button class="btn btn-outline-secondary" onclick="cancelDelete()">
+                                        <i class="fas fa-times me-2"></i>ยกเลิก
+                                    </button>
+                                    <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">
+                                        <i class="fas fa-trash-alt me-2"></i>ลบ Topic
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4 response-container">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-reply"></i>
+                            </span>
+                            <span>Response</span>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="deleteTopicResponse" class="form-control" rows="5" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -332,6 +474,17 @@
         // Load topics on page load
         document.addEventListener('DOMContentLoaded', function () {
             loadTopics();
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            // Load delete topics when tab is clicked
+            document.getElementById('delete-tab').addEventListener('click', function () {
+                loadDeleteTopics();
+            });
         });
 
         // Function to load topics
@@ -365,6 +518,9 @@
                             const badge = document.createElement('span');
                             badge.className = 'topic-badge';
                             badge.textContent = topic;
+                            badge.onclick = function () {
+                                selectTopicBadge(this, data);
+                            };
                             topicBadges.appendChild(badge);
                         });
                     }
@@ -374,6 +530,152 @@
                     topicSelect.innerHTML = '<option selected>Error loading topics</option>';
                     topicBadges.innerHTML = '<div class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error loading topics: ' + error.message + '</div>';
                 });
+        }
+
+        // Function to load topics for delete tab
+        function loadDeleteTopics() {
+            // Show loading UI
+            const deleteTopicBadges = document.getElementById('deleteTopicBadges');
+            deleteTopicBadges.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border text-danger" role="status"></div><span class="ms-2">Loading topics...</span></div>';
+
+            fetch('http://localhost:3000/topics')
+                .then(response => response.json())
+                .then(data => {
+                    // Update badges
+                    deleteTopicBadges.innerHTML = '';
+                    if (data.length === 0) {
+                        deleteTopicBadges.innerHTML = '<div class="text-muted">No topics available to delete</div>';
+                    } else {
+                        data.forEach(topic => {
+                            const badge = document.createElement('span');
+                            badge.className = 'topic-badge delete-topic-badge';
+                            badge.textContent = topic;
+                            badge.onclick = function () {
+                                selectTopicToDelete(this, topic);
+                            };
+                            deleteTopicBadges.appendChild(badge);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching topics for deletion:', error);
+                    deleteTopicBadges.innerHTML = '<div class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error loading topics: ' + error.message + '</div>';
+                });
+
+            // Hide confirmation box when refreshing
+            document.getElementById('confirmationBox').classList.add('d-none');
+            document.getElementById('deleteTopicResponse').value = '';
+        }
+
+        function selectTopicBadge(badge, allTopics) {
+            // Clear all selected
+            document.querySelectorAll('.topic-badge').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            // Mark as selected
+            badge.classList.add('selected');
+
+            // Update select dropdown
+            const topicSelect = document.getElementById('topicSelect');
+            for (let i = 0; i < topicSelect.options.length; i++) {
+                if (topicSelect.options[i].value === badge.textContent) {
+                    topicSelect.selectedIndex = i;
+                    break;
+                }
+            }
+
+            // Store selected topic
+            selectedTopic = badge.textContent;
+        }
+
+        let topicToDeleteName = '';
+
+        function selectTopicToDelete(badge, topicName) {
+            // Clear all selected
+            document.querySelectorAll('.delete-topic-badge').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            // Mark as selected
+            badge.classList.add('selected');
+
+            // Store selected topic
+            topicToDeleteName = topicName;
+
+            // Show confirmation box
+            const confirmationBox = document.getElementById('confirmationBox');
+            confirmationBox.classList.remove('d-none');
+
+            // Set topic name in confirmation message
+            document.getElementById('topicToDelete').textContent = topicName;
+
+            // Clear previous response
+            document.getElementById('deleteTopicResponse').value = '';
+        }
+
+        function cancelDelete() {
+            // Hide confirmation box
+            document.getElementById('confirmationBox').classList.add('d-none');
+
+            // Deselect all topics
+            document.querySelectorAll('.delete-topic-badge').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            // Clear stored topic name
+            topicToDeleteName = '';
+        }
+
+        async function confirmDelete() {
+            try {
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                const deleteTopicResponse = document.getElementById('deleteTopicResponse');
+
+                if (!topicToDeleteName) {
+                    deleteTopicResponse.value = "⚠️ กรุณาเลือก Topic ที่ต้องการลบ";
+                    return;
+                }
+
+                // Show loading state
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังลบ...';
+                deleteTopicResponse.value = "กำลังลบ Topic '" + topicToDeleteName + "'...";
+
+                const response = await fetch('http://localhost:3000/delete-topic', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        topicName: topicToDeleteName
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    deleteTopicResponse.value = "✅ " + JSON.stringify(result, null, 2);
+
+                    // Hide confirmation box
+                    document.getElementById('confirmationBox').classList.add('d-none');
+
+                    // Reload topics after successful deletion
+                    setTimeout(() => {
+                        loadDeleteTopics();
+                        loadTopics();
+                    }, 1000); // Give Kafka a moment to process the deletion
+                } else {
+                    deleteTopicResponse.value = "❌ " + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('deleteTopicResponse').value = "❌ Error: " + error.message;
+            } finally {
+                // Reset button state
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i>ลบ Topic';
+            }
         }
 
         let selectedTopic = ''; // Variable to store selected topic
@@ -459,11 +761,13 @@
                 if (response.ok) {
                     createTopicResponse.value = "✅ " + JSON.stringify(result, null, 2);
 
-                    // Clear the form
-                    document.getElementById('newTopicName').value = "";
+                    // Clear form fields
+                    document.getElementById('newTopicName').value = '';
 
                     // Reload topics after successful creation
-                    setTimeout(loadTopics, 1000); // Give Kafka a moment to register the new topic
+                    setTimeout(() => {
+                        loadTopics();
+                    }, 1000); // Give Kafka a moment to process the creation
                 } else {
                     createTopicResponse.value = "❌ " + JSON.stringify(result, null, 2);
                 }
@@ -471,21 +775,89 @@
                 document.getElementById('createTopicResponse').value = "❌ Error: " + error.message;
             } finally {
                 // Reset button state
+                const createBtn = document.getElementById('createBtn');
                 createBtn.disabled = false;
                 createBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Create Topic';
             }
         }
 
-        // Format JSON in the message textarea
-        document.getElementById('message').addEventListener('blur', function () {
+        // Function to validate that JSON input is properly formatted
+        function validateJsonInput(element) {
             try {
-                const content = this.value.trim();
-                if (content) {
-                    const formatted = JSON.stringify(JSON.parse(content), null, 2);
-                    this.value = formatted;
+                let inputValue = element.value.trim();
+                if (inputValue) {
+                    JSON.parse(inputValue);
+                    // Remove any error styling
+                    element.classList.remove('is-invalid');
+                    return true;
                 }
             } catch (e) {
-                // If not valid JSON, leave as is
+                // Add error styling
+                element.classList.add('is-invalid');
+                return false;
+            }
+            return true; // Empty is valid
+        }
+
+        // Add input validation for the message textarea
+        document.getElementById('message').addEventListener('blur', function () {
+            validateJsonInput(this);
+        });
+
+        // Add event listener for the topic select dropdown
+        document.getElementById('topicSelect').addEventListener('change', function () {
+            // Clear all selected topic badges
+            document.querySelectorAll('.topic-badge').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            // Find and select the corresponding badge
+            const selectedValue = this.value;
+            if (selectedValue !== "Choose a Topic" && selectedValue !== "Loading topics...") {
+                const badges = document.querySelectorAll('.topic-badge');
+                badges.forEach(badge => {
+                    if (badge.textContent === selectedValue) {
+                        badge.classList.add('selected');
+                        selectedTopic = selectedValue;
+                    }
+                });
+            }
+        });
+
+        // Function to check connection status to Kafka broker
+        async function checkConnectionStatus() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+
+                if (response.ok) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                return false;
+            }
+        }
+
+        // Check connection on page load
+        document.addEventListener('DOMContentLoaded', async function () {
+            const isConnected = await checkConnectionStatus();
+
+            if (!isConnected) {
+                // Show connection error alert
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Connection Error:</strong> Could not connect to Kafka broker. Please check if the server is running.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+                // Insert at the top of the main container
+                const mainContainer = document.querySelector('.main-container');
+                mainContainer.insertBefore(alertDiv, mainContainer.firstChild);
             }
         });
     </script>
