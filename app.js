@@ -74,6 +74,33 @@ app.post('/create-topic', async (req, res) => {
     }
 });
 
+// เพิ่ม API endpoint สำหรับลบ Topic
+app.delete('/delete-topic', async (req, res) => {
+    try {
+        const { topicName } = req.body;
+
+        // ตรวจสอบว่ามีการส่งชื่อ Topic มาหรือไม่
+        if (!topicName) {
+            return res.status(400).json({ error: 'Topic name is required' });
+        }
+
+        // เชื่อมต่อกับ Kafka admin
+        await admin.connect();
+
+        // ลบ Topic
+        await admin.deleteTopics({
+            topics: [topicName],
+            timeout: 5000 // timeout 5 วินาที
+        });
+
+        await admin.disconnect();
+        res.status(200).json({ message: `Topic '${topicName}' deleted successfully` });
+    } catch (error) {
+        console.error('Error deleting topic:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/send', async (req, res) => {
     const { message, topic } = req.body;
     await producer.send({
@@ -83,6 +110,7 @@ app.post('/send', async (req, res) => {
     res.send('Message sent to Kafka');
 });
 
+// load test function
 app.post('/send-message-loop', async (req, res) => {
     try {
         const { message, topic, count } = req.body;
@@ -100,6 +128,7 @@ app.post('/send-message-loop', async (req, res) => {
     }
 });
 
+// load test function
 app.post('/send-message-loop-v2', async (req, res) => {
     try {
         const { message, topic, count } = req.body;

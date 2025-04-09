@@ -1,158 +1,494 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="/css/bootstrap.min.css" rel="stylesheet">
-<title>Kafka Producer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Kafka Producer Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #4a47a3;
+            --success-color: #4caf50;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header-container {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tabs .nav-link {
+            font-weight: 500;
+            color: #495057;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border: 1px solid #dce1e9;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(108, 99, 255, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background-color: rgba(108, 99, 255, 0.1);
+            border-bottom: none;
+            font-weight: 600;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 1rem 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .icon-container {
+            display: inline-flex;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(108, 99, 255, 0.1);
+            border-radius: 8px;
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .response-container {
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+
+        /* For beautiful scrollbars on textarea */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .topic-badge {
+            background-color: rgba(108, 99, 255, 0.1);
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 30px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .topics-container {
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner-border {
+            width: 1.2rem;
+            height: 1.2rem;
+            margin-right: 0.5rem;
+        }
+
+        .text-muted {
+            font-size: 0.875rem;
+        }
+    </style>
 </head>
-<body class="p-4">
-<div class="container">
-    <h1 class="mb-4">Kafka Topics</h1>
-    
-    <!-- Tab navigation -->
-    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="send-tab" data-bs-toggle="tab" data-bs-target="#send" type="button" role="tab" aria-controls="send" aria-selected="true">Send Message</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab" aria-controls="create" aria-selected="false">Create Topic</button>
-        </li>
-    </ul>
-    
-    <!-- Tab content -->
-    <div class="tab-content" id="myTabContent">
-        <!-- Send Message Tab -->
-        <div class="tab-pane fade show active" id="send" role="tabpanel" aria-labelledby="send-tab">
-            <div class="mb-3">
-                <select id="topicSelect" class="form-select">
-                    <option selected>Choose a Topic</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="message" class="form-label">JSON Message:</label>
-                <textarea id="message" name="message" class="form-control" rows="15"></textarea>
-            </div>
-            <button onclick="sendMessage()" class="btn btn-primary">Send</button>
-            
-            <div class="mt-3">
-                <label for="jsonResponse" class="form-label">Response:</label>
-                <textarea id="jsonResponse" class="form-control" rows="5" readonly></textarea>
-            </div>
-        </div>
-        
-        <!-- Create Topic Tab -->
-        <div class="tab-pane fade" id="create" role="tabpanel" aria-labelledby="create-tab">
-            <div class="mb-3">
-                <label for="newTopicName" class="form-label">Topic Name:</label>
-                <input type="text" class="form-control" id="newTopicName">
-            </div>
-            <div class="mb-3">
-                <label for="numPartitions" class="form-label">Number of Partitions:</label>
-                <input type="number" class="form-control" id="numPartitions" value="1" min="1">
-            </div>
-            <div class="mb-3">
-                <label for="replicationFactor" class="form-label">Replication Factor:</label>
-                <input type="number" class="form-control" id="replicationFactor" value="1" min="1">
-            </div>
-            <button onclick="createTopic()" class="btn btn-success">Create Topic</button>
-            
-            <div class="mt-3">
-                <label for="createTopicResponse" class="form-label">Response:</label>
-                <textarea id="createTopicResponse" class="form-control" rows="5" readonly></textarea>
-            </div>
+
+<body>
+    <div class="header-container text-center">
+        <div class="container">
+            <h1><i class="fas fa-server me-2"></i>Kafka Producer Dashboard</h1>
+            <p class="lead mb-0">สร้างและจัดการ Kafka Topics ของคุณได้อย่างง่ายดาย</p>
         </div>
     </div>
-</div>
 
-<script src="/js/bootstrap.bundle.min.js"></script>
-<script>
-// Load topics on page load
-loadTopics();
+    <div class="container">
+        <div class="main-container">
+            <!-- Tab navigation with icons -->
+            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="send-tab" data-bs-toggle="tab" data-bs-target="#send"
+                        type="button" role="tab" aria-controls="send" aria-selected="true">
+                        <i class="fas fa-paper-plane me-2"></i>Send Message
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button"
+                        role="tab" aria-controls="create" aria-selected="false">
+                        <i class="fas fa-plus-circle me-2"></i>Create Topic
+                    </button>
+                </li>
+            </ul>
 
-// Function to load topics
-function loadTopics() {
-    fetch('http://localhost:3000/topics')
-        .then(response => response.json())
-        .then(data => {
+            <!-- Tab content -->
+            <div class="tab-content" id="myTabContent">
+                <!-- Send Message Tab -->
+                <div class="tab-pane fade show active" id="send" role="tabpanel" aria-labelledby="send-tab">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span>Select Topic</span>
+                        </div>
+                        <div class="card-body">
+                            <select id="topicSelect" class="form-select">
+                                <option selected>Choose a Topic</option>
+                            </select>
+
+                            <div class="topics-container" id="topicBadges">
+                                <!-- Topic badges will be populated here -->
+                            </div>
+
+                            <button onclick="loadTopics()" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh Topics
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-code"></i>
+                            </span>
+                            <span>JSON Message</span>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="message" name="message" class="form-control" rows="12" placeholder='{
+  "key": "value",
+  "example": "data"
+}'></textarea>
+                            <div class="text-muted mt-2">
+                                <i class="fas fa-info-circle me-1"></i> Enter your JSON message here
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="sendMessage()" class="btn btn-primary" id="sendBtn">
+                        <i class="fas fa-paper-plane me-2"></i>Send Message
+                    </button>
+
+                    <div class="card mt-4 response-container">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-reply"></i>
+                            </span>
+                            <span>Response</span>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="jsonResponse" class="form-control" rows="5" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Topic Tab -->
+                <div class="tab-pane fade" id="create" role="tabpanel" aria-labelledby="create-tab">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-plus-circle"></i>
+                            </span>
+                            <span>New Topic Configuration</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="newTopicName" class="form-label">Topic Name:</label>
+                                <input type="text" class="form-control" id="newTopicName"
+                                    placeholder="Enter topic name">
+                                <div class="text-muted mt-1">
+                                    <i class="fas fa-info-circle me-1"></i> Topic names should be lowercase, without
+                                    spaces
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="numPartitions" class="form-label">Number of Partitions:</label>
+                                        <input type="number" class="form-control" id="numPartitions" value="1" min="1">
+                                        <div class="text-muted mt-1">
+                                            <i class="fas fa-info-circle me-1"></i> For parallel processing
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="replicationFactor" class="form-label">Replication Factor:</label>
+                                        <input type="number" class="form-control" id="replicationFactor" value="1"
+                                            min="1">
+                                        <div class="text-muted mt-1">
+                                            <i class="fas fa-info-circle me-1"></i> For fault tolerance
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="createTopic()" class="btn btn-success" id="createBtn">
+                        <i class="fas fa-plus-circle me-2"></i>Create Topic
+                    </button>
+
+                    <div class="card mt-4 response-container">
+                        <div class="card-header d-flex align-items-center">
+                            <span class="icon-container">
+                                <i class="fas fa-reply"></i>
+                            </span>
+                            <span>Response</span>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="createTopicResponse" class="form-control" rows="5" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-muted pb-3">
+            <p>© 2025 Kafka Producer Dashboard</p>
+        </footer>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load topics on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadTopics();
+        });
+
+        // Function to load topics
+        function loadTopics() {
+            // Show loading UI
             const topicSelect = document.getElementById('topicSelect');
-            // Clear existing options except the first one
-            while(topicSelect.options.length > 1) {
-                topicSelect.remove(1);
+            const topicBadges = document.getElementById('topicBadges');
+
+            topicSelect.innerHTML = '<option selected>Loading topics...</option>';
+            topicBadges.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border text-primary" role="status"></div><span class="ms-2">Loading topics...</span></div>';
+
+            fetch('http://localhost:3000/topics')
+                .then(response => response.json())
+                .then(data => {
+                    // Update dropdown
+                    topicSelect.innerHTML = '<option selected>Choose a Topic</option>';
+
+                    data.forEach(topic => {
+                        const option = document.createElement('option');
+                        option.textContent = topic;
+                        option.value = topic;
+                        topicSelect.appendChild(option);
+                    });
+
+                    // Update badges
+                    topicBadges.innerHTML = '';
+                    if (data.length === 0) {
+                        topicBadges.innerHTML = '<div class="text-muted">No topics available</div>';
+                    } else {
+                        data.forEach(topic => {
+                            const badge = document.createElement('span');
+                            badge.className = 'topic-badge';
+                            badge.textContent = topic;
+                            topicBadges.appendChild(badge);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching topics:', error);
+                    topicSelect.innerHTML = '<option selected>Error loading topics</option>';
+                    topicBadges.innerHTML = '<div class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error loading topics: ' + error.message + '</div>';
+                });
+        }
+
+        let selectedTopic = ''; // Variable to store selected topic
+
+        async function sendMessage() {
+            try {
+                const sendBtn = document.getElementById('sendBtn');
+                const message = document.getElementById('message').value;
+                const topicSelect = document.getElementById('topicSelect');
+                const jsonResponse = document.getElementById('jsonResponse');
+
+                selectedTopic = topicSelect.options[topicSelect.selectedIndex].value; // Store selected topic
+
+                if (selectedTopic === "Choose a Topic" || selectedTopic === "Loading topics...") {
+                    jsonResponse.value = "⚠️ Please select a topic first";
+                    return;
+                }
+
+                // Validate JSON
+                try {
+                    JSON.parse(message);
+                } catch (e) {
+                    jsonResponse.value = "⚠️ Invalid JSON format: " + e.message;
+                    return;
+                }
+
+                // Show loading state
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+                jsonResponse.value = "Sending message to topic '" + selectedTopic + "'...";
+
+                const response = await fetch('http://localhost:3000/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, topic: selectedTopic }),
+                });
+
+                const result = await response.text();
+                jsonResponse.value = "✅ " + result;
+            } catch (error) {
+                document.getElementById('jsonResponse').value = "❌ Error: " + error.message;
+            } finally {
+                // Reset button state
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Message';
             }
-            
-            data.forEach(topic => {
-                const option = document.createElement('option');
-                option.textContent = topic;
-                option.value = topic; // Set value of option to the topic
-                topicSelect.appendChild(option);
-            });
-        })
-        .catch(error => console.error('Error fetching topics:', error));
-}
-
-let selectedTopic = ''; // Variable to store selected topic
-
-async function sendMessage() {
-    try {
-        const message = document.getElementById('message').value;
-        const topicSelect = document.getElementById('topicSelect');
-        selectedTopic = topicSelect.options[topicSelect.selectedIndex].value; // Store selected topic
-        
-        if (selectedTopic === "Choose a Topic") {
-            document.getElementById('jsonResponse').value = "Please select a topic";
-            return;
         }
-        
-        const response = await fetch('http://localhost:3000/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: message, topic: selectedTopic }),
+
+        async function createTopic() {
+            try {
+                const createBtn = document.getElementById('createBtn');
+                const topicName = document.getElementById('newTopicName').value;
+                const numPartitions = parseInt(document.getElementById('numPartitions').value);
+                const replicationFactor = parseInt(document.getElementById('replicationFactor').value);
+                const createTopicResponse = document.getElementById('createTopicResponse');
+
+                if (!topicName) {
+                    createTopicResponse.value = "⚠️ Topic name is required";
+                    return;
+                }
+
+                // Show loading state
+                createBtn.disabled = true;
+                createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...';
+                createTopicResponse.value = "Creating topic '" + topicName + "'...";
+
+                const response = await fetch('http://localhost:3000/create-topic', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        topicName: topicName,
+                        numPartitions: numPartitions,
+                        replicationFactor: replicationFactor
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    createTopicResponse.value = "✅ " + JSON.stringify(result, null, 2);
+
+                    // Clear the form
+                    document.getElementById('newTopicName').value = "";
+
+                    // Reload topics after successful creation
+                    setTimeout(loadTopics, 1000); // Give Kafka a moment to register the new topic
+                } else {
+                    createTopicResponse.value = "❌ " + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('createTopicResponse').value = "❌ Error: " + error.message;
+            } finally {
+                // Reset button state
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Create Topic';
+            }
+        }
+
+        // Format JSON in the message textarea
+        document.getElementById('message').addEventListener('blur', function () {
+            try {
+                const content = this.value.trim();
+                if (content) {
+                    const formatted = JSON.stringify(JSON.parse(content), null, 2);
+                    this.value = formatted;
+                }
+            } catch (e) {
+                // If not valid JSON, leave as is
+            }
         });
-        
-        const result = await response.text();
-        document.getElementById('jsonResponse').value = result;
-    } catch (error) {
-        document.getElementById('jsonResponse').value = "Error: " + error.message;
-    }
-}
-
-async function createTopic() {
-    try {
-        const topicName = document.getElementById('newTopicName').value;
-        const numPartitions = parseInt(document.getElementById('numPartitions').value);
-        const replicationFactor = parseInt(document.getElementById('replicationFactor').value);
-        
-        if (!topicName) {
-            document.getElementById('createTopicResponse').value = "Topic name is required";
-            return;
-        }
-        
-        const response = await fetch('http://localhost:3000/create-topic', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                topicName: topicName,
-                numPartitions: numPartitions,
-                replicationFactor: replicationFactor
-            }),
-        });
-        
-        const result = await response.json();
-        document.getElementById('createTopicResponse').value = JSON.stringify(result, null, 2);
-        
-        // Reload topics after successful creation
-        if (response.ok) {
-            setTimeout(loadTopics, 1000); // Give Kafka a moment to register the new topic
-        }
-    } catch (error) {
-        document.getElementById('createTopicResponse').value = "Error: " + error.message;
-    }
-}
-</script>
+    </script>
 </body>
+
 </html>
