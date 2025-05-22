@@ -37,3 +37,5 @@ build/
 # Kafka logs (ถ้ามี)
 kafka-logs/
 zookeeper/
+kafka/
+logs/
